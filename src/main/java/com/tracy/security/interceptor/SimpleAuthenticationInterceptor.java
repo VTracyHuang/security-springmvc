@@ -1,0 +1,54 @@
+package com.tracy.security.interceptor;
+
+import com.tracy.security.model.UserDto;
+import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.HandlerInterceptor;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.PrintWriter;
+
+/**
+ * 功能描述：
+ *
+ * @Author Tracy
+ * @Date 2020/5/7 17:05
+ */
+@Component
+public class SimpleAuthenticationInterceptor implements HandlerInterceptor {
+    @Override
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+
+        //在这个方法中校验用户请求的url是否在用户的权限范围内
+        //取出用户的身份信息
+        Object object = request.getSession().getAttribute(UserDto.SESSION_USER_KEY);
+
+        if(object == null){
+            //没有认证，提示登录
+            writeContent(response,"请登录");
+        }
+        UserDto userDto = (UserDto) object;
+        //请求的url
+        String requestURI = request.getRequestURI();
+        if(requestURI.contains("/login")){
+            return true;
+        }
+        if(userDto.getAuthorities().contains("p1") && requestURI.contains("/r/r1")){
+            return true;
+        }
+        if(userDto.getAuthorities().contains("p2") && requestURI.contains("/r/r2")){
+            return true;
+        }
+        writeContent(response,"没有权限，拒绝访问");
+        return false;
+    }
+    //响应信息给客户端
+    private void writeContent(HttpServletResponse response,String message) throws IOException {
+        response.setContentType("text/html;charset=utf-8");
+        PrintWriter writer = response.getWriter();
+        writer.print(message);
+        writer.close();
+        response.resetBuffer();
+    }
+}
